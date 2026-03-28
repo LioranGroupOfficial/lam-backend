@@ -37,7 +37,7 @@ export class UsersService {
       { clerkId: data.clerkId },
       data,
       {
-        new: true,
+        returnDocument: 'after',
         upsert: true,
       },
     );

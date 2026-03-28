@@ -16,7 +16,7 @@ async function bootstrap() {
       "http://localhost:3000",
       "https://lam-frontend.vercel.app",
     ],
-    // credentials: true,
+    credentials: true,
   });
 
   app.use(bodyParser.raw({ type: 'application/json' }));

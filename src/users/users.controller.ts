@@ -7,10 +7,12 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { UsersService } from './users.service';
+import { Throttle } from '@nestjs/throttler';
+import { RATE_LIMIT } from '../config/constants';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   /**
    * GET /users/me
@@ -22,6 +24,7 @@ export class UsersController {
    *
    * Optimized: Only updates MongoDB if data has changed
    */
+  @Throttle({ default: { limit: RATE_LIMIT.AUTH.LIMIT, ttl: RATE_LIMIT.AUTH.TTL } }) // Limit to 5 requests per minute for this endpoint
   @Get('me')
   async getMe(@Req() req: Request) {
     const auth = (req as any).user;
