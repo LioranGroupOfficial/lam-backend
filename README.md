@@ -1,98 +1,230 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Lioran API Marketplace Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS + MongoDB backend for the Lioran API marketplace. This service handles:
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- Clerk-based authentication
+- MongoDB persistence with Mongoose
+- Global rate limiting with `@nestjs/throttler`
+- CRUD APIs for marketplace resources
+- User sync from Clerk into the local `users` collection
 
-## Description
+## Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- NestJS 11
+- TypeScript
+- MongoDB + Mongoose
+- Clerk auth
+- Class Validator / Class Transformer
 
-## Project setup
+## Project Structure
 
-```bash
-$ pnpm install
+```text
+src/
+  api-docs/
+  api-keys/
+  api-usage/
+  apis/
+  auth/
+  categories/
+  common/
+  config/
+  conversion-logs/
+  decorators/
+  providers/
+  ratings/
+  reviews/
+  users/
+  wallet-transactions/
+  webhooks/
 ```
 
-## Compile and run the project
+## Environment
 
-```bash
-# development
-$ pnpm run start
+Create a `.env.local` file in `lam-backend/` with:
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+```env
+MONGODB_URI=mongodb://localhost:27017
+CLERK_SECRET_KEY=sk_test_xxx
+PRODUCTION=false
+PORT=3000
 ```
 
-## Run tests
+## Install
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm install
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Run
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Build
 
-## Resources
+```bash
+pnpm run build
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## Auth Model
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- Clerk auth is enforced globally through `ClerkAuthGuard`.
+- Any route without `@Public()` requires `Authorization: Bearer <clerk_jwt>`.
+- Public browse routes are exposed for marketplace discovery.
+- `GET /users/me` creates or updates the local marketplace user from Clerk profile data.
 
-## Support
+## Rate Limiting
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Global throttling lives in `src/config/constants.ts`.
 
-## Stay in touch
+- Default: 100 requests / minute
+- Auth-sensitive routes: 5 requests / minute
+- `GET /users/me` uses the auth-specific throttle
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Data Model
 
-## License
+### User
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```ts
+{
+  clerkId: string;
+  username: string;
+  email: string;
+  avatarUrl?: string;
+  bio: string;
+  socialLinks: { platform: string; url: string }[];
+  wallet: {
+    spend: number;
+    withdrawable: number;
+    pending: number;
+  };
+  apiLimit: number;
+  banned: boolean;
+  banReason?: string;
+  suspended: boolean;
+  suspendedReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Marketplace Collections
+
+- `categories`
+- `apis`
+- `apiDocs`
+- `apiKeys`
+- `apiUsage`
+- `walletTransactions`
+- `conversionLogs`
+- `reviews`
+- `ratings`
+
+Each module includes:
+
+- Mongoose schema
+- `create-*` DTO
+- `update-*` DTO
+- service
+- controller
+- Nest module registration
+
+## Route Summary
+
+Full route docs live in [docs/API_REFERENCE.md](c:\Users\Omen\Downloads\projects\LAM\lam-backend\docs\API_REFERENCE.md).
+
+### Public Routes
+
+- `GET /`
+- `GET /users`
+- `GET /users/clerk/:clerkId`
+- `GET /users/:id`
+- `GET /categories`
+- `GET /categories/:id`
+- `GET /apis`
+- `GET /apis/:id`
+- `GET /api-docs`
+- `GET /api-docs/:id`
+- `GET /reviews`
+- `GET /reviews/:id`
+- `GET /ratings`
+- `GET /ratings/:id`
+
+### Authenticated Routes
+
+- `GET /auth/me`
+- `GET /users/me`
+- All `POST`, `PATCH`, and `DELETE` CRUD endpoints
+- `GET /api-keys`
+- `GET /api-usage`
+- `GET /wallet-transactions`
+- `GET /conversion-logs`
+- `POST /webhooks/clerk`
+
+## Module Notes
+
+### Users
+
+- Local marketplace user profile is stored separately from Clerk.
+- `GET /users/me` upserts a local record from the Clerk token payload.
+- Users support full CRUD plus lookup by Clerk id.
+
+### APIs
+
+- APIs belong to an owner via `ownerId`.
+- APIs belong to a category via `categoryId`.
+- List endpoint supports `ownerId`, `categoryId`, and `isActive` filters.
+
+### API Docs
+
+- Stores documentation per API.
+- Supports nested routes, argument definitions, and request/response examples.
+
+### API Keys
+
+- Stores a marketplace key record linked to a user.
+- Per-key permissions support `apiId`, `maxCostPerRequest`, and `rpm`.
+
+### API Usage
+
+- Tracks request outcome, latency, cost, commission, and owner earnings.
+
+### Wallet Transactions
+
+- Tracks wallet debits, credits, withdrawals, deposits, and conversions.
+
+### Conversion Logs
+
+- Tracks internal wallet conversions between `SPEND` and `WITHDRAWABLE`.
+
+### Reviews and Ratings
+
+- Reviews store text content.
+- Ratings store numeric values from 1 to 5.
+
+## Validation
+
+DTOs use `class-validator`, and the app runs with a global validation pipe:
+
+- `whitelist: true`
+- `forbidNonWhitelisted: true`
+
+That means extra request fields are rejected.
+
+## Current Assumptions
+
+- Business rules are not yet fully enforced at the domain level.
+- Owner-only updates/deletes are not implemented yet.
+- API key values are stored directly and are not hashed yet.
+- Rating aggregation into `Api.avgRating` and `Api.totalRatings` is not automatic yet.
+- Wallet balances are not auto-mutated from transaction records yet.
+
+## Recommended Next Steps
+
+- Add role/ownership guards
+- Hash and rotate API keys
+- Add Swagger/OpenAPI docs
+- Add pagination for list endpoints
+- Add search/sort endpoints for marketplace discovery
+- Add business workflows for balances, purchases, and rating aggregation

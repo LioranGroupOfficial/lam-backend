@@ -1,16 +1,24 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ApiDocsModule } from './api-docs/api-docs.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
+import { ApiUsageModule } from './api-usage/api-usage.module';
+import { ApisModule } from './apis/apis.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClerkClientProvider } from 'src/providers/clerk-client.provider';
 import { AuthModule } from './auth/auth.module';
 import { ClerkAuthGuard } from './auth/clerk-auth.guard';
-import { APP_GUARD } from '@nestjs/core';
-import { UsersModule } from './users/users.module';
-// import { ClerkWebhookController } from './webhooks/clerk-webhook.controller';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { CategoriesModule } from './categories/categories.module';
 import { RATE_LIMIT } from './config/constants';
+import { ConversionLogsModule } from './conversion-logs/conversion-logs.module';
+import { ClerkClientProvider } from './providers/clerk-client.provider';
+import { RatingsModule } from './ratings/ratings.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { UsersModule } from './users/users.module';
+import { WalletTransactionsModule } from './wallet-transactions/wallet-transactions.module';
 
 @Module({
   imports: [
@@ -26,7 +34,6 @@ import { RATE_LIMIT } from './config/constants';
         },
       ],
     }),
-    // Async configuration to inject the ConfigService
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
@@ -42,20 +49,28 @@ import { RATE_LIMIT } from './config/constants';
     }),
     AuthModule,
     UsersModule,
+    CategoriesModule,
+    ApisModule,
+    ApiDocsModule,
+    ApiKeysModule,
+    ApiUsageModule,
+    WalletTransactionsModule,
+    ConversionLogsModule,
+    ReviewsModule,
+    RatingsModule,
   ],
-  controllers: [
-    AppController,
-    // ClerkWebhookController
-  ],
+  controllers: [AppController],
   providers: [
     AppService,
-    ClerkClientProvider, {
+    ClerkClientProvider,
+    {
       provide: APP_GUARD,
       useClass: ClerkAuthGuard,
-    }, {
+    },
+    {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
-    }
+    },
   ],
 })
-export class AppModule { }
+export class AppModule {}

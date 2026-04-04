@@ -1,85 +1,76 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
-  Req,
-  Param,
   NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Req,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { UsersService } from './users.service';
 import { Throttle } from '@nestjs/throttler';
 import { RATE_LIMIT } from '../config/constants';
+import { Public } from '../decorators/public.decorator';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
-  /**
-   * GET /users/me
-   *
-   * First login:
-   *   → creates user in MongoDB
-   * Next login:
-   *   → returns existing user
-   *
-   * Optimized: Only updates MongoDB if data has changed
-   */
-  @Throttle({ default: { limit: RATE_LIMIT.AUTH.LIMIT, ttl: RATE_LIMIT.AUTH.TTL } }) // Limit to 5 requests per minute for this endpoint
+  @Throttle({
+    default: { limit: RATE_LIMIT.AUTH.LIMIT, ttl: RATE_LIMIT.AUTH.TTL },
+  })
   @Get('me')
-  async getMe(@Req() req: Request) {
+  getMe(@Req() req: Request) {
     const auth = (req as any).user;
 
     if (!auth?.id) {
       throw new NotFoundException('User not authenticated');
     }
 
-    const clerkId = auth.id;
-    const email = auth.sessionClaims?.email;
-    const firstName = auth.sessionClaims?.firstName;
-    const lastName = auth.sessionClaims?.lastName;
+    const email =
+      auth.emailAddresses?.find(
+        (entry: { id: string; emailAddress: string }) =>
+          entry.id === auth.primaryEmailAddressId,
+      )?.emailAddress ?? auth.emailAddresses?.[0]?.emailAddress;
 
-    // Check if user already exists
-    const existingUser = await this.usersService.findByClerkId(clerkId);
+    const nameFromProfile = [auth.firstName, auth.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const resolvedEmail = email ?? `${auth.id}@clerk.local`;
+    const resolvedUsername =
+      auth.username ||
+      nameFromProfile ||
+      resolvedEmail.split('@')[0] ||
+      `user-${auth.id.slice(-6)}`;
 
-    let user;
-    if (!existingUser) {
-      // First login → create user
-      user = await this.usersService.upsertUser({
-        clerkId,
-        email,
-        firstName,
-        lastName,
-      });
-      console.log(`Created new user: ${clerkId}`);
-    } else {
-      // Only update if any field changed
-      const needsUpdate =
-        existingUser.email !== email ||
-        existingUser.firstName !== firstName ||
-        existingUser.lastName !== lastName;
-
-      if (needsUpdate) {
-        user = await this.usersService.upsertUser({
-          clerkId,
-          email,
-          firstName,
-          lastName,
-        });
-        console.log(`Updated user: ${clerkId}`);
-      } else {
-        user = existingUser;
-      }
-    }
-
-    return user;
+    return this.usersService.upsertFromClerk({
+      clerkId: auth.id,
+      email: resolvedEmail,
+      username: resolvedUsername,
+      avatarUrl: auth.imageUrl,
+    });
   }
 
-  /**
-   * GET /users/:clerkId
-   * Example: /users/user_abc123
-   */
-  @Get(':clerkId')
-  async getUserByClerkId(@Param('clerkId') clerkId: string) {
+  @Post()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @Public()
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Public()
+  @Get('clerk/:clerkId')
+  async findByClerkId(@Param('clerkId') clerkId: string) {
     const user = await this.usersService.findByClerkId(clerkId);
 
     if (!user) {
@@ -89,11 +80,19 @@ export class UsersController {
     return user;
   }
 
-  /**
-   * Health check / debug
-   */
-  @Get()
-  async getAllUsers() {
-    return this.usersService.getAllUsers();
+  @Public()
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
   }
 }

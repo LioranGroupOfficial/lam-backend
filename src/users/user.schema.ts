@@ -3,13 +3,25 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-@Schema({ _id: false }) // subdocument, no separate _id
-class Wallet {
+@Schema({ _id: false })
+export class SocialLink {
+  @Prop({ required: true })
+  platform: string;
+
+  @Prop({ required: true })
+  url: string;
+}
+
+@Schema({ _id: false })
+export class Wallet {
   @Prop({ type: Number, default: 0 })
-  earn: number; // money earned (₹)
+  spend: number;
 
   @Prop({ type: Number, default: 0 })
-  spend: number; // money available to spend (₹)
+  withdrawable: number;
+
+  @Prop({ type: Number, default: 0 })
+  pending: number;
 }
 
 @Schema({
@@ -20,20 +32,38 @@ export class User {
   @Prop({ required: true, unique: true })
   clerkId: string;
 
-  @Prop()
+  @Prop({ required: true, unique: true, trim: true, lowercase: true })
   email: string;
 
-  @Prop()
-  firstName: string;
+  @Prop({ required: true, trim: true })
+  username: string;
 
   @Prop()
-  lastName: string;
+  avatarUrl: string;
 
-  @Prop({ default: 'user' })
-  role: string;
+  @Prop({ default: '' })
+  bio: string;
+
+  @Prop({ type: [SocialLink], default: [] })
+  socialLinks: SocialLink[];
 
   @Prop({ type: Wallet, default: {} })
   wallet: Wallet;
+
+  @Prop({ type: Number, default: 1000 })
+  apiLimit: number;
+
+  @Prop({ default: false })
+  banned: boolean;
+
+  @Prop()
+  banReason: string;
+
+  @Prop({ default: false })
+  suspended: boolean;
+
+  @Prop()
+  suspendedReason: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
